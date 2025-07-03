@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Navigate, useNavigate, Link } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { QuestLogin } from '@questlabs/react-sdk';
 import { useAuth } from '../../contexts/AuthContext';
@@ -13,7 +13,7 @@ const QuestLoginPage = () => {
 
   // Redirect if already authenticated
   if (isAuthenticated && user) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to={user.role === 'admin' ? '/admin' : '/dashboard'} replace />;
   }
 
   const handleLoginSuccess = async (loginData) => {
@@ -23,7 +23,7 @@ const QuestLoginPage = () => {
       
       toast.success(`Welcome ${newUser ? '' : 'back'}, ${userData.name}!`);
       
-      // Navigate based on user role and type
+      // Navigate based on user type
       if (userData.role === 'admin') {
         navigate('/admin');
       } else if (newUser) {
@@ -135,16 +135,18 @@ const QuestLoginPage = () => {
 
             {/* Demo Credentials */}
             <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-              <p className="text-xs text-gray-600 text-center">
-                <strong>Demo Credentials:</strong><br />
-                <span className="text-red-600 font-semibold">Admin:</span> admin@financepro.com<br />
-                <span className="text-blue-600 font-semibold">Professional:</span> user@financepro.com<br />
-                Or use any email to create a new account
+              <p className="text-xs text-gray-600 text-center mb-2">
+                <strong>Demo Credentials:</strong>
               </p>
+              <div className="text-xs text-gray-700 space-y-1">
+                <div><strong>Admin:</strong> sebasrodus@gmail.com</div>
+                <div><strong>Professional:</strong> demo@financepro.com</div>
+                <div className="text-gray-500">Use any email to create a new account</div>
+              </div>
             </div>
 
             {/* Footer Links */}
-            <div className="mt-6 text-center space-y-2">
+            <div className="mt-6 text-center">
               <p className="text-sm text-gray-600">
                 Don't have an account?{' '}
                 <button 
@@ -154,13 +156,18 @@ const QuestLoginPage = () => {
                   Sign up here
                 </button>
               </p>
-              <p className="text-xs text-gray-500">
-                <Link 
-                  to="/login/traditional" 
-                  className="text-gray-500 hover:text-gray-700 underline"
+            </div>
+
+            {/* Alternative Login Link */}
+            <div className="mt-4 text-center">
+              <p className="text-sm text-gray-600">
+                Prefer traditional login?{' '}
+                <button 
+                  onClick={() => navigate('/login')}
+                  className="text-primary-600 hover:text-primary-700 font-medium"
                 >
-                  Use traditional login instead
-                </Link>
+                  Use email/password
+                </button>
               </p>
             </div>
           </div>

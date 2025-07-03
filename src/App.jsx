@@ -25,7 +25,7 @@ import Testimonials from './pages/public/Testimonials';
 
 // Auth Pages - Quest SDK + Traditional
 import QuestLogin from './pages/auth/QuestLogin';
-import Login from './pages/auth/Login'; // Traditional login fallback
+import Login from './pages/auth/Login';
 import QuestOnboarding from './pages/auth/QuestOnboarding';
 import Register from './pages/auth/Register';
 
@@ -69,9 +69,9 @@ function App() {
                   <Route path="testimonials" element={<Testimonials />} />
                 </Route>
 
-                {/* Auth Routes */}
-                <Route path="/login" element={<QuestLogin />} />
-                <Route path="/login/traditional" element={<Login />} />
+                {/* Auth Routes - Quest SDK + Traditional */}
+                <Route path="/quest-login" element={<QuestLogin />} />
+                <Route path="/login" element={<Login />} />
                 <Route path="/onboarding" element={<QuestOnboarding />} />
                 <Route path="/register" element={<Register />} />
 

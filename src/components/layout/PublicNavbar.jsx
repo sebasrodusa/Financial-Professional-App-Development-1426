@@ -52,7 +52,7 @@ const PublicNavbar = () => {
           {/* Auth Buttons */}
           <div className="hidden md:flex items-center space-x-4">
             <Link
-              to="/login"
+              to="/quest-login"
               className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 hover:text-primary-600 transition-colors"
             >
               <SafeIcon icon={FiLogIn} className="w-4 h-4" />
@@ -102,7 +102,7 @@ const PublicNavbar = () => {
             ))}
             <div className="border-t border-gray-200 pt-4 pb-3">
               <Link
-                to="/login"
+                to="/quest-login"
                 onClick={() => setIsOpen(false)}
                 className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-primary-600 hover:bg-gray-50"
               >

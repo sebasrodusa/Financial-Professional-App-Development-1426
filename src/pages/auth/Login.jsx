@@ -16,14 +16,14 @@ const Login = () => {
   const { register, handleSubmit, formState: { errors } } = useForm();
 
   if (user) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to={user.role === 'admin' ? '/admin' : '/dashboard'} replace />;
   }
 
   const onSubmit = async (data) => {
     setLoading(true);
     try {
-      await login(data.email, data.password);
-      toast.success('Welcome back!');
+      const user = await login(data.email, data.password);
+      toast.success(`Welcome ${user.role === 'admin' ? 'back, Administrator' : 'back'}!`);
     } catch (error) {
       toast.error('Invalid credentials');
     } finally {
@@ -146,17 +146,13 @@ const Login = () => {
             </button>
           </div>
 
-          <div className="text-center">
+          <div className="text-center space-y-2">
             <p className="text-sm text-gray-600">
-              Demo credentials: admin@example.com / professional@example.com (any password)
+              <strong>Demo Credentials:</strong>
             </p>
-            <div className="mt-4">
-              <Link 
-                to="/login" 
-                className="text-primary-600 hover:text-primary-700 font-medium"
-              >
-                ← Back to Quest Login
-              </Link>
+            <div className="bg-gray-50 p-3 rounded-lg text-xs text-gray-700 space-y-1">
+              <div><strong>Admin:</strong> sebasrodus@gmail.com / #500Kfinancepro</div>
+              <div><strong>Professional:</strong> professional@example.com (any password)</div>
             </div>
           </div>
         </form>
