@@ -22,9 +22,11 @@ const MyBlog = () => {
   const filteredPosts = myPosts.filter(post => {
     const matchesSearch = post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          post.excerpt.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = filterStatus === 'all' || 
+    
+    const matchesStatus = filterStatus === 'all' ||
                          (filterStatus === 'featured' && post.featured) ||
                          (filterStatus === 'regular' && !post.featured);
+
     return matchesSearch && matchesStatus;
   });
 
@@ -114,7 +116,6 @@ const MyBlog = () => {
                 </button>
               </div>
             </div>
-
             <div className="p-6">
               <div className="flex items-center space-x-4 text-sm text-gray-500 mb-3">
                 <div className="flex items-center space-x-1">
@@ -127,6 +128,7 @@ const MyBlog = () => {
               <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2">
                 {post.title}
               </h3>
+
               <p className="text-gray-600 mb-4 line-clamp-3">
                 {post.excerpt}
               </p>

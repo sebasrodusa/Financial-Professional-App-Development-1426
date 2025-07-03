@@ -5,14 +5,17 @@ import { useData } from '../../contexts/DataContext';
 import { format } from 'date-fns';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../../components/common/SafeIcon';
+import AuthorCard from '../../components/blog/AuthorCard';
+import ShareButtons from '../../components/blog/ShareButtons';
 
-const { FiArrowLeft, FiClock, FiUser, FiTag, FiShare2, FiHeart } = FiIcons;
+const { FiArrowLeft, FiClock, FiUser, FiTag, FiCalendar } = FiIcons;
 
 const BlogPost = () => {
   const { id } = useParams();
-  const { blogPosts } = useData();
+  const { blogPosts, professionals } = useData();
   
   const post = blogPosts.find(p => p.id === id);
+  const author = professionals.find(p => p.id === post?.authorId);
 
   if (!post) {
     return (
@@ -61,50 +64,52 @@ const BlogPost = () => {
         >
           {/* Header */}
           <div className="p-8 pb-6">
-            <div className="flex items-center space-x-4 text-sm text-gray-500 mb-4">
-              <div className="flex items-center space-x-1">
-                <SafeIcon icon={FiUser} className="w-4 h-4" />
-                <span>{post.author}</span>
-              </div>
-              <div className="flex items-center space-x-1">
-                <SafeIcon icon={FiClock} className="w-4 h-4" />
-                <span>{format(new Date(post.publishedAt), 'MMMM d, yyyy')}</span>
-              </div>
-              <span>{post.readTime} min read</span>
+            {/* Categories & Tags */}
+            <div className="flex flex-wrap gap-2 mb-4">
+              {post.categories?.map((category) => (
+                <span
+                  key={category.value}
+                  className="px-3 py-1 bg-primary-100 text-primary-700 text-sm rounded-full font-medium"
+                >
+                  {category.label}
+                </span>
+              ))}
+              {post.tags?.slice(0, 3).map((tag) => (
+                <span
+                  key={tag.value}
+                  className="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded-full"
+                >
+                  #{tag.label}
+                </span>
+              ))}
             </div>
 
             <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
               {post.title}
             </h1>
-
+            
             <p className="text-xl text-gray-600 mb-6">
               {post.excerpt}
             </p>
 
-            {/* Tags */}
-            <div className="flex flex-wrap gap-2 mb-6">
-              {post.tags?.map(tag => (
-                <span
-                  key={tag}
-                  className="px-3 py-1 bg-primary-100 text-primary-700 text-sm rounded-full"
-                >
-                  {tag}
-                </span>
-              ))}
+            {/* Meta Info */}
+            <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 mb-6">
+              <div className="flex items-center space-x-1">
+                <SafeIcon icon={FiUser} className="w-4 h-4" />
+                <span>By {post.author}</span>
+              </div>
+              <div className="flex items-center space-x-1">
+                <SafeIcon icon={FiCalendar} className="w-4 h-4" />
+                <span>{format(new Date(post.publishedAt), 'MMMM d, yyyy')}</span>
+              </div>
+              <div className="flex items-center space-x-1">
+                <SafeIcon icon={FiClock} className="w-4 h-4" />
+                <span>{post.readTime} min read</span>
+              </div>
             </div>
 
             {/* Share Buttons */}
-            <div className="flex items-center space-x-4 pt-4 border-t border-gray-200">
-              <span className="text-sm text-gray-500">Share:</span>
-              <button className="flex items-center space-x-2 text-gray-500 hover:text-primary-600 transition-colors">
-                <SafeIcon icon={FiShare2} className="w-4 h-4" />
-                <span>Share</span>
-              </button>
-              <button className="flex items-center space-x-2 text-gray-500 hover:text-red-600 transition-colors">
-                <SafeIcon icon={FiHeart} className="w-4 h-4" />
-                <span>Like</span>
-              </button>
-            </div>
+            <ShareButtons post={post} className="mb-6" />
           </div>
 
           {/* Featured Image */}
@@ -118,34 +123,49 @@ const BlogPost = () => {
 
           {/* Content */}
           <div className="p-8">
-            <div 
+            <div
               className="prose prose-lg max-w-none"
               dangerouslySetInnerHTML={{ __html: post.content }}
             />
           </div>
 
-          {/* Footer */}
+          {/* Tags */}
+          {post.tags && post.tags.length > 0 && (
+            <div className="px-8 pb-6">
+              <h3 className="text-sm font-medium text-gray-700 mb-3 flex items-center">
+                <SafeIcon icon={FiTag} className="w-4 h-4 mr-1" />
+                Tags
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {post.tags.map((tag) => (
+                  <Link
+                    key={tag.value}
+                    to={`/blog?tag=${tag.value}`}
+                    className="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded-full hover:bg-primary-100 hover:text-primary-700 transition-colors"
+                  >
+                    #{tag.label}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Author Section */}
+          {author && (
+            <div className="px-8 py-6 bg-gray-50 border-t border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">About the Author</h3>
+              <AuthorCard author={author} />
+            </div>
+          )}
+
+          {/* Share Again */}
           <div className="px-8 py-6 bg-gray-50 border-t border-gray-200">
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <img
-                  src={`https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=50&h=50&fit=crop&crop=face`}
-                  alt={post.author}
-                  className="w-12 h-12 rounded-full"
-                />
-                <div>
-                  <h4 className="font-semibold text-gray-900">{post.author}</h4>
-                  <p className="text-sm text-gray-600">Financial Advisor</p>
-                </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Enjoyed this article?</h3>
+                <p className="text-gray-600">Share it with your network</p>
               </div>
-              <div className="flex items-center space-x-2">
-                <button className="text-gray-500 hover:text-primary-600 transition-colors">
-                  <SafeIcon icon={FiShare2} className="w-5 h-5" />
-                </button>
-                <button className="text-gray-500 hover:text-red-600 transition-colors">
-                  <SafeIcon icon={FiHeart} className="w-5 h-5" />
-                </button>
-              </div>
+              <ShareButtons post={post} />
             </div>
           </div>
         </motion.article>

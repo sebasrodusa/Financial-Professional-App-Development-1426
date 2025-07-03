@@ -6,168 +6,358 @@ import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../../components/common/SafeIcon';
+import AdvancedEditor from '../../components/blog/AdvancedEditor';
+import SEOOptimizer from '../../components/blog/SEOOptimizer';
+import CategoryTagManager from '../../components/blog/CategoryTagManager';
+import PublishingControlPanel from '../../components/blog/PublishingControlPanel';
 
-const { FiSave, FiArrowLeft, FiImage, FiVideo, FiEye } = FiIcons;
+const { FiArrowLeft, FiSave, FiEye, FiImage } = FiIcons;
 
 const BlogEditor = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { blogPosts, addBlogPost, updateBlogPost } = useData();
+  
+  // Form and content state
   const [content, setContent] = useState('');
-  const [preview, setPreview] = useState(false);
-  const [selectedTags, setSelectedTags] = useState([]);
-
-  const { register, handleSubmit, formState: { errors }, reset, watch } = useForm();
-
+  const [seoData, setSeoData] = useState({
+    metaTitle: '',
+    metaDescription: '',
+    slug: '',
+    ogImage: '',
+    focusKeyword: ''
+  });
+  const [categoryTagData, setCategoryTagData] = useState({ 
+    categories: [], 
+    tags: [] 
+  });
+  
+  // Editor state
+  const [autoSaveTimer, setAutoSaveTimer] = useState(null);
+  const [lastSaved, setLastSaved] = useState(null);
+  const [showPreview, setShowPreview] = useState(false);
+  const [currentStatus, setCurrentStatus] = useState('draft');
+  
   const isEditing = !!id;
   const currentPost = isEditing ? blogPosts.find(post => post.id === id) : null;
+  
+  const { register, handleSubmit, formState: { errors }, reset, watch, setValue } = useForm({
+    defaultValues: {
+      title: '',
+      excerpt: '',
+      thumbnail: '',
+      featured: false
+    }
+  });
 
+  const formData = watch();
+
+  // Load existing post data
   useEffect(() => {
     if (isEditing && currentPost) {
       reset({
-        title: currentPost.title,
-        excerpt: currentPost.excerpt,
-        thumbnail: currentPost.thumbnail
+        title: currentPost.title || '',
+        excerpt: currentPost.excerpt || '',
+        thumbnail: currentPost.thumbnail || '',
+        featured: currentPost.featured || false
       });
-      setContent(currentPost.content);
-      setSelectedTags(currentPost.tags || []);
+      
+      setContent(currentPost.content || '');
+      setCurrentStatus(currentPost.status || 'draft');
+      
+      setSeoData({
+        metaTitle: currentPost.metaTitle || currentPost.title || '',
+        metaDescription: currentPost.metaDescription || currentPost.excerpt || '',
+        slug: currentPost.slug || '',
+        ogImage: currentPost.ogImage || '',
+        focusKeyword: currentPost.focusKeyword || ''
+      });
+      
+      setCategoryTagData({
+        categories: currentPost.categories || [],
+        tags: currentPost.tags || []
+      });
     }
   }, [isEditing, currentPost, reset]);
 
-  const availableTags = [
-    'Financial Planning', 'Investment', 'Retirement', 'Tax Strategy', 
-    'Insurance', 'Estate Planning', 'Market Analysis', 'Savings',
-    'Debt Management', 'Real Estate', 'Cryptocurrency', 'Economics'
-  ];
+  // Auto-save functionality
+  useEffect(() => {
+    if (formData.title || content) {
+      if (autoSaveTimer) {
+        clearTimeout(autoSaveTimer);
+      }
+      
+      const timer = setTimeout(() => {
+        handleAutoSave();
+      }, 10000); // Auto-save every 10 seconds
+      
+      setAutoSaveTimer(timer);
+    }
+    
+    return () => {
+      if (autoSaveTimer) {
+        clearTimeout(autoSaveTimer);
+      }
+    };
+  }, [formData, content, seoData, categoryTagData]);
 
-  const onSubmit = async (data) => {
+  // Draft recovery
+  useEffect(() => {
+    if (!isEditing) {
+      const savedDraft = localStorage.getItem('blogEditorDraft');
+      if (savedDraft) {
+        try {
+          const draft = JSON.parse(savedDraft);
+          if (window.confirm('A draft was found. Would you like to recover it?')) {
+            reset(draft.formData);
+            setContent(draft.content);
+            setSeoData(draft.seoData);
+            setCategoryTagData(draft.categoryTagData);
+            setLastSaved(new Date(draft.savedAt));
+          } else {
+            localStorage.removeItem('blogEditorDraft');
+          }
+        } catch (error) {
+          console.error('Error recovering draft:', error);
+          localStorage.removeItem('blogEditorDraft');
+        }
+      }
+    }
+  }, [isEditing, reset]);
+
+  const handleAutoSave = () => {
+    const draftData = {
+      formData,
+      content,
+      seoData,
+      categoryTagData,
+      savedAt: new Date().toISOString()
+    };
+    
+    localStorage.setItem('blogEditorDraft', JSON.stringify(draftData));
+    setLastSaved(new Date());
+  };
+
+  const handleSaveDraft = (publishData = {}) => {
     try {
-      const postData = {
-        ...data,
-        content,
-        tags: selectedTags,
-        author: user.name,
-        authorId: user.id,
-        slug: data.title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
-        readTime: Math.ceil(content.split(' ').length / 200) // Estimate reading time
-      };
+      const postData = createPostData({
+        ...publishData,
+        action: 'draft',
+        status: 'draft'
+      });
 
       if (isEditing) {
         updateBlogPost(id, postData);
-        toast.success('Blog post updated successfully');
+        toast.success('Draft updated successfully');
+      } else {
+        const newPost = addBlogPost(postData);
+        toast.success('Draft saved successfully');
+        navigate(`/dashboard/blog/edit/${newPost.id}`);
+      }
+      
+      setCurrentStatus('draft');
+      localStorage.removeItem('blogEditorDraft');
+    } catch (error) {
+      toast.error('Failed to save draft');
+    }
+  };
+
+  const handlePublish = (publishData = {}) => {
+    if (!validateForm()) return;
+    
+    try {
+      const postData = createPostData({
+        ...publishData,
+        action: 'publish',
+        status: 'published',
+        publishedAt: new Date().toISOString()
+      });
+
+      if (isEditing) {
+        updateBlogPost(id, postData);
+        toast.success('Post updated successfully');
       } else {
         addBlogPost(postData);
-        toast.success('Blog post created successfully');
+        toast.success('Post published successfully');
+        localStorage.removeItem('blogEditorDraft');
       }
-
+      
+      setCurrentStatus('published');
       navigate('/dashboard/blog');
     } catch (error) {
-      toast.error('An error occurred while saving the post');
+      toast.error('Failed to publish post');
     }
   };
 
-  const handleTagToggle = (tag) => {
-    setSelectedTags(prev => 
-      prev.includes(tag) 
-        ? prev.filter(t => t !== tag)
-        : [...prev, tag]
-    );
+  const handleSchedule = (publishData = {}) => {
+    if (!validateForm()) return;
+    
+    try {
+      const postData = createPostData({
+        ...publishData,
+        action: 'schedule',
+        status: 'scheduled'
+      });
+
+      if (isEditing) {
+        updateBlogPost(id, postData);
+        toast.success('Post rescheduled successfully');
+      } else {
+        addBlogPost(postData);
+        toast.success('Post scheduled successfully');
+        localStorage.removeItem('blogEditorDraft');
+      }
+      
+      setCurrentStatus('scheduled');
+      navigate('/dashboard/blog');
+    } catch (error) {
+      toast.error('Failed to schedule post');
+    }
   };
 
-  const insertContent = (type) => {
-    const textarea = document.getElementById('content-editor');
-    const cursorPos = textarea.selectionStart;
-    let insertText = '';
+  const handlePreview = () => {
+    setShowPreview(true);
+    // In a real app, this would open a preview modal or new tab
+    toast.info('Preview functionality would open here');
+  };
 
-    switch (type) {
-      case 'image':
-        insertText = '\n![Image Alt Text](https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=800&h=400&fit=crop)\n';
-        break;
-      case 'video':
-        insertText = '\n<iframe width="560" height="315" src="https://www.youtube.com/embed/VIDEO_ID" frameborder="0" allowfullscreen></iframe>\n';
-        break;
-      default:
-        return;
+  const createPostData = (publishData) => {
+    const baseData = {
+      ...formData,
+      content,
+      ...seoData,
+      categories: categoryTagData.categories,
+      tags: categoryTagData.tags,
+      author: user?.name || 'Unknown',
+      authorId: user?.id || 'unknown',
+      readTime: calculateReadTime(content),
+      updatedAt: new Date().toISOString()
+    };
+
+    if (publishData.scheduledAt) {
+      baseData.scheduledAt = publishData.scheduledAt.toISOString();
     }
 
-    const newContent = content.slice(0, cursorPos) + insertText + content.slice(cursorPos);
-    setContent(newContent);
+    if (publishData.status) {
+      baseData.status = publishData.status;
+    }
+
+    if (publishData.visibility) {
+      baseData.visibility = publishData.visibility;
+    }
+
+    if (publishData.publishedAt) {
+      baseData.publishedAt = publishData.publishedAt;
+    }
+
+    return baseData;
   };
 
-  const renderPreview = () => {
-    return (
-      <div className="prose max-w-none">
-        <h1>{watch('title') || 'Blog Post Title'}</h1>
-        <p className="text-gray-600 italic">{watch('excerpt') || 'Blog post excerpt...'}</p>
-        {watch('thumbnail') && (
-          <img src={watch('thumbnail')} alt="Thumbnail" className="w-full h-64 object-cover rounded-lg mb-4" />
-        )}
-        <div dangerouslySetInnerHTML={{ __html: content.replace(/\n/g, '<br>') }} />
-      </div>
-    );
+  const validateForm = () => {
+    if (!formData.title?.trim()) {
+      toast.error('Title is required');
+      return false;
+    }
+    
+    if (!formData.excerpt?.trim()) {
+      toast.error('Excerpt is required');
+      return false;
+    }
+    
+    if (!content?.trim()) {
+      toast.error('Content is required');
+      return false;
+    }
+    
+    return true;
+  };
+
+  const calculateReadTime = (htmlContent) => {
+    const text = htmlContent.replace(/<[^>]*>/g, '');
+    const wordCount = text.split(/\s+/).filter(word => word.length > 0).length;
+    return Math.max(1, Math.ceil(wordCount / 200));
+  };
+
+  const formatLastSaved = () => {
+    if (!lastSaved) return 'Never';
+    
+    const now = new Date();
+    const diffInMinutes = Math.floor((now - lastSaved) / 60000);
+    
+    if (diffInMinutes < 1) return 'Just now';
+    if (diffInMinutes < 60) return `${diffInMinutes} minutes ago`;
+    
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) return `${diffInHours} hours ago`;
+    
+    return lastSaved.toLocaleDateString();
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <button
-            onClick={() => navigate('/dashboard/blog')}
-            className="p-2 text-gray-500 hover:text-gray-700 transition-colors"
-          >
-            <SafeIcon icon={FiArrowLeft} className="w-5 h-5" />
-          </button>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              {isEditing ? 'Edit Blog Post' : 'Create New Blog Post'}
-            </h1>
-            <p className="text-gray-600 mt-1">
-              {isEditing ? 'Update your blog post' : 'Share your insights with your audience'}
-            </p>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Header */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => navigate('/dashboard/blog')}
+                className="p-2 text-gray-500 hover:text-gray-700 transition-colors rounded-lg hover:bg-white"
+              >
+                <SafeIcon icon={FiArrowLeft} className="w-5 h-5" />
+              </button>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">
+                  {isEditing ? 'Edit Blog Post' : 'Create New Blog Post'}
+                </h1>
+                <p className="text-gray-600 mt-1">
+                  {isEditing ? 'Update your blog post content and settings' : 'Create engaging content for your audience'}
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-3">
+              <button
+                type="button"
+                onClick={() => handleSaveDraft()}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-white transition-colors flex items-center space-x-2"
+              >
+                <SafeIcon icon={FiSave} className="w-4 h-4" />
+                <span>Save Draft</span>
+              </button>
+              
+              <button
+                type="button"
+                onClick={handlePreview}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-white transition-colors flex items-center space-x-2"
+              >
+                <SafeIcon icon={FiEye} className="w-4 h-4" />
+                <span>Preview</span>
+              </button>
+            </div>
           </div>
         </div>
-        <div className="flex items-center space-x-3">
-          <button
-            type="button"
-            onClick={() => setPreview(!preview)}
-            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center space-x-2"
-          >
-            <SafeIcon icon={FiEye} className="w-4 h-4" />
-            <span>{preview ? 'Edit' : 'Preview'}</span>
-          </button>
-          <button
-            form="blog-form"
-            type="submit"
-            className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors flex items-center space-x-2"
-          >
-            <SafeIcon icon={FiSave} className="w-4 h-4" />
-            <span>{isEditing ? 'Update' : 'Publish'}</span>
-          </button>
-        </div>
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Editor */}
-        <div className="lg:col-span-2">
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            {preview ? (
-              <div className="min-h-96">
-                {renderPreview()}
-              </div>
-            ) : (
-              <form id="blog-form" onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        {/* Main Content */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Editor Column */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Basic Information */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Post Information</h2>
+              
+              <div className="space-y-4">
                 {/* Title */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Post Title
+                    Title *
                   </label>
                   <input
                     {...register('title', { required: 'Title is required' })}
                     type="text"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                    placeholder="Enter your blog post title"
+                    placeholder="Enter an engaging title for your post"
                   />
                   {errors.title && (
                     <p className="mt-1 text-sm text-red-600">{errors.title.message}</p>
@@ -177,26 +367,31 @@ const BlogEditor = () => {
                 {/* Excerpt */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Excerpt
+                    Excerpt *
                   </label>
                   <textarea
                     {...register('excerpt', { required: 'Excerpt is required' })}
                     rows={3}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                    placeholder="Write a brief description of your post"
+                    placeholder="Write a compelling summary of your post (150-160 characters recommended)"
+                    maxLength={200}
                   />
                   {errors.excerpt && (
                     <p className="mt-1 text-sm text-red-600">{errors.excerpt.message}</p>
                   )}
+                  <p className="mt-1 text-xs text-gray-500">
+                    {formData.excerpt?.length || 0}/200 characters
+                  </p>
                 </div>
 
-                {/* Thumbnail */}
+                {/* Featured Image */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Thumbnail Image URL
+                    <SafeIcon icon={FiImage} className="w-4 h-4 inline mr-1" />
+                    Featured Image URL *
                   </label>
                   <input
-                    {...register('thumbnail', { required: 'Thumbnail is required' })}
+                    {...register('thumbnail', { required: 'Featured image is required' })}
                     type="url"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     placeholder="https://images.unsplash.com/photo-..."
@@ -204,110 +399,76 @@ const BlogEditor = () => {
                   {errors.thumbnail && (
                     <p className="mt-1 text-sm text-red-600">{errors.thumbnail.message}</p>
                   )}
-                </div>
-
-                {/* Content Editor */}
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="block text-sm font-medium text-gray-700">
-                      Content
-                    </label>
-                    <div className="flex items-center space-x-2">
-                      <button
-                        type="button"
-                        onClick={() => insertContent('image')}
-                        className="p-2 text-gray-500 hover:text-gray-700 transition-colors"
-                        title="Insert Image"
-                      >
-                        <SafeIcon icon={FiImage} className="w-4 h-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => insertContent('video')}
-                        className="p-2 text-gray-500 hover:text-gray-700 transition-colors"
-                        title="Insert Video"
-                      >
-                        <SafeIcon icon={FiVideo} className="w-4 h-4" />
-                      </button>
+                  
+                  {/* Image Preview */}
+                  {formData.thumbnail && (
+                    <div className="mt-3">
+                      <img 
+                        src={formData.thumbnail} 
+                        alt="Thumbnail preview" 
+                        className="w-full h-48 object-cover rounded-lg border border-gray-200"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                        }}
+                      />
                     </div>
-                  </div>
-                  <textarea
-                    id="content-editor"
-                    value={content}
-                    onChange={(e) => setContent(e.target.value)}
-                    rows={20}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent font-mono text-sm"
-                    placeholder="Write your blog post content here. You can use HTML tags for formatting."
-                  />
+                  )}
                 </div>
-              </form>
-            )}
-          </div>
-        </div>
 
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Tags */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Tags</h3>
-            <div className="flex flex-wrap gap-2">
-              {availableTags.map(tag => (
-                <button
-                  key={tag}
-                  type="button"
-                  onClick={() => handleTagToggle(tag)}
-                  className={`px-3 py-1 rounded-full text-sm transition-colors ${
-                    selectedTags.includes(tag)
-                      ? 'bg-primary-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  {tag}
-                </button>
-              ))}
+                {/* Featured Toggle */}
+                <div className="flex items-center space-x-2">
+                  <input
+                    {...register('featured')}
+                    type="checkbox"
+                    className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                  />
+                  <label className="text-sm text-gray-900">
+                    Mark as featured post
+                  </label>
+                  <span className="text-xs text-gray-500">(Featured posts appear prominently on the blog)</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Content Editor */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Content</h2>
+              <AdvancedEditor
+                value={content}
+                onChange={setContent}
+                placeholder="Start writing your blog post..."
+              />
             </div>
           </div>
 
-          {/* Publishing Options */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Publishing</h3>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-700">Status</span>
-                <span className="text-sm font-medium text-green-600">
-                  {isEditing ? 'Published' : 'Draft'}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-700">Author</span>
-                <span className="text-sm font-medium text-gray-900">{user?.name}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-700">Date</span>
-                <span className="text-sm font-medium text-gray-900">
-                  {new Date().toLocaleDateString()}
-                </span>
-              </div>
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Publishing Controls */}
+            <PublishingControlPanel
+              onPublish={handlePublish}
+              onSaveDraft={handleSaveDraft}
+              onSchedule={handleSchedule}
+              onPreview={handlePreview}
+              isEditing={isEditing}
+              currentStatus={currentStatus}
+              lastSaved={formatLastSaved()}
+            />
+            
+            {/* Categories & Tags */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+              <CategoryTagManager
+                selectedCategories={categoryTagData.categories}
+                selectedTags={categoryTagData.tags}
+                onChange={setCategoryTagData}
+              />
             </div>
-          </div>
-
-          {/* SEO */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">SEO</h3>
-            <div className="space-y-3">
-              <div>
-                <span className="text-sm text-gray-700">Estimated read time</span>
-                <p className="text-sm font-medium text-gray-900">
-                  {Math.ceil(content.split(' ').length / 200)} min read
-                </p>
-              </div>
-              <div>
-                <span className="text-sm text-gray-700">Word count</span>
-                <p className="text-sm font-medium text-gray-900">
-                  {content.split(' ').length} words
-                </p>
-              </div>
-            </div>
+            
+            {/* SEO Optimizer */}
+            <SEOOptimizer
+              formData={formData}
+              seoData={seoData}
+              onChange={setSeoData}
+            />
           </div>
         </div>
       </div>
