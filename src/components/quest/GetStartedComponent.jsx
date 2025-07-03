@@ -5,7 +5,7 @@ import { questConfig, getUserId } from '../../config/questConfig';
 const GetStartedComponent = ({ onClose }) => {
   return (
     <div className="quest-getstarted-container">
-      <GetStarted 
+      <GetStarted
         questId={questConfig.GET_STARTED_QUESTID}
         uniqueUserId={getUserId()}
         accent={questConfig.PRIMARY_COLOR}

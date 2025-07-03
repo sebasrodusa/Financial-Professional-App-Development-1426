@@ -10,8 +10,22 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src')
     }
   },
-   build: {
+  build: {
     outDir: 'dist',
-    sourcemap: true
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+          icons: ['react-icons'],
+          motion: ['framer-motion'],
+          forms: ['react-hook-form'],
+          quest: ['@questlabs/react-sdk']
+        }
+      }
+    }
   },
+  optimizeDeps: {
+    include: ['react', 'react-dom', 'react-router-dom', 'react-icons', 'framer-motion']
+  }
 });

@@ -23,10 +23,10 @@ import Events from './pages/public/Events';
 import EventDetail from './pages/public/EventDetail';
 import Testimonials from './pages/public/Testimonials';
 
-// Auth Pages - Quest SDK + Traditional
+// Auth Pages
 import QuestLogin from './pages/auth/QuestLogin';
-import Login from './pages/auth/Login';
 import QuestOnboarding from './pages/auth/QuestOnboarding';
+import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 
 // Professional Dashboard
@@ -69,7 +69,7 @@ function App() {
                   <Route path="testimonials" element={<Testimonials />} />
                 </Route>
 
-                {/* Auth Routes - Quest SDK + Traditional */}
+                {/* Auth Routes */}
                 <Route path="/quest-login" element={<QuestLogin />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/onboarding" element={<QuestOnboarding />} />

@@ -18,7 +18,7 @@ const BlogEditor = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { blogPosts, addBlogPost, updateBlogPost } = useData();
-  
+
   // Form and content state
   const [content, setContent] = useState('');
   const [seoData, setSeoData] = useState({
@@ -28,20 +28,20 @@ const BlogEditor = () => {
     ogImage: '',
     focusKeyword: ''
   });
-  const [categoryTagData, setCategoryTagData] = useState({ 
-    categories: [], 
-    tags: [] 
+  const [categoryTagData, setCategoryTagData] = useState({
+    categories: [],
+    tags: []
   });
-  
+
   // Editor state
   const [autoSaveTimer, setAutoSaveTimer] = useState(null);
   const [lastSaved, setLastSaved] = useState(null);
   const [showPreview, setShowPreview] = useState(false);
   const [currentStatus, setCurrentStatus] = useState('draft');
-  
+
   const isEditing = !!id;
   const currentPost = isEditing ? blogPosts.find(post => post.id === id) : null;
-  
+
   const { register, handleSubmit, formState: { errors }, reset, watch, setValue } = useForm({
     defaultValues: {
       title: '',
@@ -155,7 +155,7 @@ const BlogEditor = () => {
         toast.success('Draft saved successfully');
         navigate(`/dashboard/blog/edit/${newPost.id}`);
       }
-      
+
       setCurrentStatus('draft');
       localStorage.removeItem('blogEditorDraft');
     } catch (error) {
@@ -165,7 +165,7 @@ const BlogEditor = () => {
 
   const handlePublish = (publishData = {}) => {
     if (!validateForm()) return;
-    
+
     try {
       const postData = createPostData({
         ...publishData,
@@ -182,7 +182,7 @@ const BlogEditor = () => {
         toast.success('Post published successfully');
         localStorage.removeItem('blogEditorDraft');
       }
-      
+
       setCurrentStatus('published');
       navigate('/dashboard/blog');
     } catch (error) {
@@ -192,7 +192,7 @@ const BlogEditor = () => {
 
   const handleSchedule = (publishData = {}) => {
     if (!validateForm()) return;
-    
+
     try {
       const postData = createPostData({
         ...publishData,
@@ -208,7 +208,7 @@ const BlogEditor = () => {
         toast.success('Post scheduled successfully');
         localStorage.removeItem('blogEditorDraft');
       }
-      
+
       setCurrentStatus('scheduled');
       navigate('/dashboard/blog');
     } catch (error) {
@@ -326,7 +326,6 @@ const BlogEditor = () => {
                 <SafeIcon icon={FiSave} className="w-4 h-4" />
                 <span>Save Draft</span>
               </button>
-              
               <button
                 type="button"
                 onClick={handlePreview}
@@ -403,9 +402,9 @@ const BlogEditor = () => {
                   {/* Image Preview */}
                   {formData.thumbnail && (
                     <div className="mt-3">
-                      <img 
-                        src={formData.thumbnail} 
-                        alt="Thumbnail preview" 
+                      <img
+                        src={formData.thumbnail}
+                        alt="Thumbnail preview"
                         className="w-full h-48 object-cover rounded-lg border border-gray-200"
                         onError={(e) => {
                           e.target.style.display = 'none';
@@ -453,7 +452,7 @@ const BlogEditor = () => {
               currentStatus={currentStatus}
               lastSaved={formatLastSaved()}
             />
-            
+
             {/* Categories & Tags */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
               <CategoryTagManager
@@ -462,7 +461,7 @@ const BlogEditor = () => {
                 onChange={setCategoryTagData}
               />
             </div>
-            
+
             {/* SEO Optimizer */}
             <SEOOptimizer
               formData={formData}

@@ -10,8 +10,8 @@ export const questConfig = {
   TOKEN: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ1LWZmMjNlYWRhLTAxMDktNDdjNi1iNTMyLThjMDAzZTA0M2Y5ZCIsImlhdCI6MTc1MTUxMzQ4MywiZXhwIjoxNzU0MTA1NDgzfQ.Ld1N9ddYYuRS7tMFivmvdAuAyKT320c0FgNC9tacOdg',
   ENTITYID: 'e-d016baaf-f8c1-44f3-b77f-ccc6eec6b98e',
   
-  // Theme Configuration - Extracted from your existing primary colors
-  PRIMARY_COLOR: '#0284c7', // primary-600 from your tailwind config
+  // Theme Configuration
+  PRIMARY_COLOR: '#0284c7',
   
   // API Configuration
   API_TYPE: 'PRODUCTION'
