@@ -28,34 +28,10 @@ export const DataProvider = ({ children }) => {
   const initializeMockData = () => {
     // Initialize blog categories
     const mockCategories = [
-      {
-        id: '1',
-        name: 'Financial Planning',
-        slug: 'financial-planning',
-        color: '#3B82F6',
-        postCount: 5
-      },
-      {
-        id: '2',
-        name: 'Investment Strategy',
-        slug: 'investment-strategy',
-        color: '#10B981',
-        postCount: 3
-      },
-      {
-        id: '3',
-        name: 'Retirement Planning',
-        slug: 'retirement-planning',
-        color: '#F59E0B',
-        postCount: 4
-      },
-      {
-        id: '4',
-        name: 'Tax Strategy',
-        slug: 'tax-strategy',
-        color: '#8B5CF6',
-        postCount: 2
-      }
+      { id: '1', name: 'Financial Planning', slug: 'financial-planning', color: '#3B82F6', postCount: 5 },
+      { id: '2', name: 'Investment Strategy', slug: 'investment-strategy', color: '#10B981', postCount: 3 },
+      { id: '3', name: 'Retirement Planning', slug: 'retirement-planning', color: '#F59E0B', postCount: 4 },
+      { id: '4', name: 'Tax Strategy', slug: 'tax-strategy', color: '#8B5CF6', postCount: 2 }
     ];
 
     // Initialize blog tags
@@ -70,7 +46,7 @@ export const DataProvider = ({ children }) => {
       { id: '8', name: 'Savings', slug: 'savings', postCount: 5 }
     ];
 
-    // Mock professionals
+    // Mock professionals with enhanced data
     const mockProfessionals = [
       {
         id: '1',
@@ -86,7 +62,21 @@ export const DataProvider = ({ children }) => {
         certifications: ['CFP', 'CPA'],
         experience: 12,
         rating: 4.9,
-        reviewCount: 127
+        reviewCount: 127,
+        // New fields
+        socialLinks: {
+          linkedin: 'https://linkedin.com/in/sarahjohnson',
+          instagram: 'https://instagram.com/sarahfinance',
+          facebook: 'https://facebook.com/sarah.johnson.advisor'
+        },
+        calendarLink: 'https://calendly.com/sarahjohnson/consultation',
+        education: [
+          { degree: 'Master of Finance', institution: 'NYU Stern School of Business', year: '2010' },
+          { degree: 'Bachelor of Economics', institution: 'Columbia University', year: '2008' }
+        ],
+        languages: ['English', 'Spanish'],
+        hourlyRate: '$250',
+        availability: 'Monday-Friday, 9 AM - 6 PM EST'
       },
       {
         id: '2',
@@ -102,7 +92,21 @@ export const DataProvider = ({ children }) => {
         certifications: ['CFA', 'CFP'],
         experience: 8,
         rating: 4.8,
-        reviewCount: 89
+        reviewCount: 89,
+        // New fields
+        socialLinks: {
+          linkedin: 'https://linkedin.com/in/michaelchen',
+          instagram: 'https://instagram.com/michael_invests',
+          facebook: ''
+        },
+        calendarLink: 'https://calendly.com/michaelchen/30min',
+        education: [
+          { degree: 'MBA Finance', institution: 'Stanford Graduate School of Business', year: '2014' },
+          { degree: 'Bachelor of Business', institution: 'UC Berkeley', year: '2012' }
+        ],
+        languages: ['English', 'Mandarin'],
+        hourlyRate: '$300',
+        availability: 'Monday-Friday, 8 AM - 5 PM PST'
       }
     ];
 
@@ -367,6 +371,13 @@ export const DataProvider = ({ children }) => {
     setClients(prev => prev.filter(client => client.id !== id));
   };
 
+  // Professional management
+  const updateProfessional = (id, updates) => {
+    setProfessionals(prev => prev.map(professional => 
+      professional.id === id ? { ...professional, ...updates } : professional
+    ));
+  };
+
   // Report management
   const addReport = (reportData) => {
     const newReport = {
@@ -396,26 +407,26 @@ export const DataProvider = ({ children }) => {
       ...postData,
       createdAt: new Date().toISOString()
     };
-    
+
     if (!newPost.slug && newPost.title) {
       newPost.slug = newPost.title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
     }
-    
+
     setBlogPosts(prev => [...prev, newPost]);
-    
+
     // Update category and tag post counts
     postData.categories?.forEach(category => {
       setBlogCategories(prev => prev.map(cat => 
         cat.id === category.id ? { ...cat, postCount: (cat.postCount || 0) + 1 } : cat
       ));
     });
-    
+
     postData.tags?.forEach(tag => {
       setBlogTags(prev => prev.map(t => 
         t.id === tag.id ? { ...t, postCount: (t.postCount || 0) + 1 } : t
       ));
     });
-    
+
     return newPost;
   };
 
@@ -427,9 +438,8 @@ export const DataProvider = ({ children }) => {
 
   const deleteBlogPost = (id) => {
     const post = blogPosts.find(p => p.id === id);
-    
     setBlogPosts(prev => prev.filter(post => post.id !== id));
-    
+
     // Update category and tag post counts
     if (post) {
       post.categories?.forEach(category => {
@@ -437,7 +447,7 @@ export const DataProvider = ({ children }) => {
           cat.id === category.id ? { ...cat, postCount: Math.max(0, (cat.postCount || 0) - 1) } : cat
         ));
       });
-      
+
       post.tags?.forEach(tag => {
         setBlogTags(prev => prev.map(t => 
           t.id === tag.id ? { ...t, postCount: Math.max(0, (t.postCount || 0) - 1) } : t
@@ -461,6 +471,9 @@ export const DataProvider = ({ children }) => {
     addClient,
     updateClient,
     deleteClient,
+
+    // Professional methods
+    updateProfessional,
 
     // Report methods
     addReport,
