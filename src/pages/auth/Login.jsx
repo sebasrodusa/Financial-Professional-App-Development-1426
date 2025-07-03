@@ -13,7 +13,6 @@ const Login = () => {
   const { user, login } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  
   const { register, handleSubmit, formState: { errors } } = useForm();
 
   if (user) {
@@ -51,10 +50,7 @@ const Login = () => {
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
             Or{' '}
-            <Link
-              to="/register"
-              className="font-medium text-primary-600 hover:text-primary-500"
-            >
+            <Link to="/register" className="font-medium text-primary-600 hover:text-primary-500">
               create a new account
             </Link>
           </p>
@@ -70,7 +66,7 @@ const Login = () => {
               <div className="mt-1 relative">
                 <SafeIcon icon={FiMail} className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
                 <input
-                  {...register('email', { 
+                  {...register('email', {
                     required: 'Email is required',
                     pattern: {
                       value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
@@ -95,7 +91,7 @@ const Login = () => {
               <div className="mt-1 relative">
                 <SafeIcon icon={FiLock} className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
                 <input
-                  {...register('password', { 
+                  {...register('password', {
                     required: 'Password is required',
                     minLength: {
                       value: 6,
@@ -154,6 +150,14 @@ const Login = () => {
             <p className="text-sm text-gray-600">
               Demo credentials: admin@example.com / professional@example.com (any password)
             </p>
+            <div className="mt-4">
+              <Link 
+                to="/login" 
+                className="text-primary-600 hover:text-primary-700 font-medium"
+              >
+                ← Back to Quest Login
+              </Link>
+            </div>
           </div>
         </form>
       </motion.div>
